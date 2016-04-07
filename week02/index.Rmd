@@ -1,0 +1,49 @@
+---
+title: "An Example Using the Tufte Style"
+author: "Joshua Kunst"
+output: html_document
+---
+
+<link rel="stylesheet" href="styles.css">
+```{r setup, include = FALSE, echo = FALSE, meesage = FALSE, warning = FALSE}
+library("dplyr")
+library("viridisLite")
+library("highcharter")
+knitr::opts_chunk$set(echo = FALSE, meesage = FALSE, warning = FALSE)
+```
+
+##  {.tabset .tabset-fade .tabset-pills}
+
+### Maps
+
+<div class="col-md-4">
+ 
+Lorem asdioasd masd aso´dm asd asodma sdopam sdpoams daopmsd asda sd asda dasd asd
+
+</div>
+<div class="col-md-8">
+```{r}
+data("USArrests", package = "datasets")
+data("usgeojson")
+
+USArrests <- USArrests %>% 
+  mutate(state = rownames(.))
+
+highchart() %>% 
+  hc_add_series_map(usgeojson, USArrests, name = "Murder arrests (per 100,000)",
+                    value = "Murder", joinBy = c("woename", "state"),
+                    dataLabels = list(enabled = TRUE,
+                                      format = '{point.properties.postalcode}')) %>% 
+  hc_colorAxis(stops = color_stops())
+```
+</div>
+
+### Lines
+
+```{r}
+hc_demo() %>% 
+  hc_title(text  = "") %>% 
+  hc_subtitle(text  = "")
+```
+
+

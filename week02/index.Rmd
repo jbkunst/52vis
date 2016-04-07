@@ -1,49 +1,139 @@
 ---
-title: "An Example Using the Tufte Style"
-author: "Joshua Kunst"
-output: html_document
+title: "The Title Goes Here"
+output:
+  html_document:
+    theme: flatly
+    toc: false
 ---
 
 <link rel="stylesheet" href="styles.css">
 ```{r setup, include = FALSE, echo = FALSE, meesage = FALSE, warning = FALSE}
+rm(list = ls())
 library("dplyr")
 library("viridisLite")
 library("highcharter")
+
+thm <- hc_theme(
+  backgroundColor = "transparent"
+)
+
 knitr::opts_chunk$set(echo = FALSE, meesage = FALSE, warning = FALSE)
+
+
+source("data.R")
+data("usgeojson")
+varname <- "total_homeless"
+df <- get_series(varname) 
 ```
 
 ##  {.tabset .tabset-fade .tabset-pills}
 
+### Evolutions of homeless counts
+
+<div class="col-md-3">
+ 
+If we see 
+
+</div>
+<div class="col-md-9">
+```{r}
+fmtrr <- "function() {
+  if (this.point.x == this.series.data[this.series.data.length-1].x) {
+      return this.series.options.id;
+  } else {
+      return null;
+  }
+}"
+
+dtlopts <- list(
+        enabled = TRUE,
+        align = "left",
+        verticalAlign = "middle",
+        formatter = JS(fmtrr),
+        crop = FALSE,
+        overflow = FALSE
+      )
+
+defaultcolor <- hex_to_rgba("#3f3f3f", 0.25)
+
+dss <- df %>% 
+  arrange(name, year) %>% 
+  group_by(name) %>% 
+  do(dss = list(
+    name = first(.$name),
+    id = first(.$state),
+    data = .[[sprintf("%s_per_100k", varname)]],
+    color = ifelse(first(.$name) == "District of Columbia", "red", NA)
+  )) %>% 
+  .$dss
+
+hc_tms <- highchart() %>%
+  hc_chart(type = "spline", backgroundColor = "transparent") %>% 
+  hc_colors(list(defaultcolor)) %>% 
+  hc_plotOptions(
+    series = list(
+      dataLabels = dtlopts,
+      showInLegend = FALSE,
+      animation = list(duration = 5*1000),
+      marker = list(enabled = FALSE),
+      stickyTracking = FALSE,
+      events = list(
+        mouseOver = JS("function(){ this.update({color: 'red'})}"),
+        mouseOut = JS(sprintf("function(){ this.update({color: '%s'}) }", defaultcolor))
+      )
+      )
+    ) %>% 
+  hc_tooltip(valueDecimals = 0) %>% 
+  hc_yAxis(type = "logarithmic") %>% 
+  hc_xAxis(categories = sort(unique(homeless$year)))
+
+hc_tms$x$hc_opts$series <- dss
+hc_tms
+```
+</div>
+
 ### Maps
 
-<div class="col-md-4">
+<div class="col-md-3">
  
 Lorem asdioasd masd aso´dm asd asodma sdopam sdpoams daopmsd asda sd asda dasd asd
 
 </div>
-<div class="col-md-8">
+<div class="col-md-9">
 ```{r}
-data("USArrests", package = "datasets")
-data("usgeojson")
+dss <- df %>% 
+  group_by(name) %>% 
+  do(dss = list(
+    code = first(.$state) %>% tolower() %>% str_c("us-", .),
+    postalcode = first(.$state),
+    sequence = .[[sprintf("%s_per_100k", varname)]],
+    value = first(.[[sprintf("%s_per_100k", varname)]]))) %>% 
+  .$dss
 
-USArrests <- USArrests %>% 
-  mutate(state = rownames(.))
+hc_map <- highchart(type = "map") %>% 
+  hc_add_series(data = dss,
+                name = "per 100,000",
+                mapData = usgeojson,
+                joinBy = "code") %>% 
+  hc_colorAxis(stops = color_stops(option = "A"), reversed = TRUE,
+               max = 1500, type = "logarithmic") %>% 
+  hc_motion(
+    enabled = TRUE,
+    axisLabel = "year",
+    labels = sort(unique(df$year)),
+    series = 0,
+    updateIterval = 50,
+    magnet = list(
+     round = "floor",
+     step = 0.1
+    )
+  )
 
-highchart() %>% 
-  hc_add_series_map(usgeojson, USArrests, name = "Murder arrests (per 100,000)",
-                    value = "Murder", joinBy = c("woename", "state"),
-                    dataLabels = list(enabled = TRUE,
-                                      format = '{point.properties.postalcode}')) %>% 
-  hc_colorAxis(stops = color_stops())
+hc_map
+
 ```
 </div>
 
-### Lines
 
-```{r}
-hc_demo() %>% 
-  hc_title(text  = "") %>% 
-  hc_subtitle(text  = "")
-```
 
 

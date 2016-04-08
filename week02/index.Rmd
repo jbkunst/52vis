@@ -12,6 +12,11 @@ rm(list = ls())
 library("dplyr")
 library("viridisLite")
 library("highcharter")
+source("data.R")
+
+maincolor <- "#2c3e50"
+defaultcolor <- hex_to_rgba("#3f3f3f", 0.25)
+
 
 thm <- hc_theme(
   backgroundColor = "transparent"
@@ -20,7 +25,6 @@ thm <- hc_theme(
 knitr::opts_chunk$set(echo = FALSE, meesage = FALSE, warning = FALSE)
 
 
-source("data.R")
 data("usgeojson")
 varname <- "total_homeless"
 df <- get_series(varname) 
@@ -28,7 +32,9 @@ df <- get_series(varname)
 
 ##  {.tabset .tabset-fade .tabset-pills}
 
-### Evolutions of homeless counts
+### How Many
+
+#### They were & are,
 
 <div class="col-md-3">
  
@@ -54,8 +60,6 @@ dtlopts <- list(
         overflow = FALSE
       )
 
-defaultcolor <- hex_to_rgba("#3f3f3f", 0.25)
-
 dss <- df %>% 
   arrange(name, year) %>% 
   group_by(name) %>% 
@@ -78,7 +82,7 @@ hc_tms <- highchart() %>%
       marker = list(enabled = FALSE),
       stickyTracking = FALSE,
       events = list(
-        mouseOver = JS("function(){ this.update({color: 'red'})}"),
+        mouseOver = JS(sprintf("function(){ this.update({color: '%s'})}", maincolor)),
         mouseOut = JS(sprintf("function(){ this.update({color: '%s'}) }", defaultcolor))
       )
       )
@@ -107,7 +111,7 @@ dss <- df %>%
     code = first(.$state) %>% tolower() %>% str_c("us-", .),
     postalcode = first(.$state),
     sequence = .[[sprintf("%s_per_100k", varname)]],
-    value = first(.[[sprintf("%s_per_100k", varname)]]))) %>% 
+    value = last(.[[sprintf("%s_per_100k", varname)]]))) %>% 
   .$dss
 
 hc_map <- highchart(type = "map") %>% 
@@ -115,20 +119,8 @@ hc_map <- highchart(type = "map") %>%
                 name = "per 100,000",
                 mapData = usgeojson,
                 joinBy = "code") %>% 
-  hc_colorAxis(stops = color_stops(option = "A"), reversed = TRUE,
-               max = 1500, type = "logarithmic") %>% 
-  hc_motion(
-    enabled = TRUE,
-    axisLabel = "year",
-    labels = sort(unique(df$year)),
-    series = 0,
-    updateIterval = 50,
-    magnet = list(
-     round = "floor",
-     step = 0.1
-    )
-  )
-
+  hc_colorAxis(minColor = "#000000", maxColor = "#FDE725",
+               min = 1, max = 1100)
 hc_map
 
 ```

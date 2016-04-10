@@ -14,34 +14,111 @@ library("viridisLite")
 library("highcharter")
 source("data.R")
 
+# other data
+varname <- "total_homeless"
+df <- get_series(varname) 
+
+data("usgeojson")
 maincolor <- "#2c3e50"
 defaultcolor <- hex_to_rgba("#3f3f3f", 0.25)
-
+H <- 400
 
 thm <- hc_theme(
   backgroundColor = "transparent"
 )
 
 knitr::opts_chunk$set(echo = FALSE, meesage = FALSE, warning = FALSE)
-
-
-data("usgeojson")
-varname <- "total_homeless"
-df <- get_series(varname) 
 ```
 
 ##  {.tabset .tabset-fade .tabset-pills}
 
-### How Many
+### Waffle
 
-#### They were & are,
+#### asd
 
-<div class="col-md-3">
- 
-If we see 
+<div class="col-md-4">
+**Sadly**, a lot of people is homeless in the USA. How ever not all the 
+states have the same rate of.
+
+Is alarming how the **Distric of Columnbia** have the greatest 
+rate of homeless people by far followed by **Hawaii** and
+**New York**.
+</div>
+
+<div class="col-md-8">
+```{r}
+dft <- df %>% 
+  filter(year == max(year)) %>% 
+  select(-year, -total_homeless_per_100k, -state) %>% 
+  arrange(desc(n)) %>% 
+  mutate(p = 100*n/sum(n),
+         seq = row_number())
+
+dft1 <- dft %>% 
+  filter(seq <= 5) 
+
+dft2 <- dft %>% 
+  filter(seq >= 6) %>% 
+  summarise(n = sum(n), p = sum(p)) %>% 
+  mutate(population = sum(dft$population) - sum(dft1$population),
+         p =  sum(dft$p) - sum(dft1$p),
+         name = "Rest of states")
+
+dft <- bind_rows(dft1, dft2) %>% 
+  select(-seq) %>% 
+  mutate(pr = round(p))
+
+
+w <- 20
+h <- 5
+
+dcoords <- data_frame(x =  rep(1:w, h),
+                 y = rep(1:h, each = w)) %>% 
+  mutate(gr = rep(seq(nrow(dft)), times = dft$pr)) %>% 
+  group_by(gr) %>% 
+  do(data = list.parse2(data_frame(.$x, .$y)))
+
+dst <- list.parse2(bind_cols(dft, dcoords)) %>% 
+  map(function(x){
+    x$marker = list(symbol = fa_icon_mark("male"), radius = 7)
+    x$icon = fa_icon("male")
+    x
+  })
+
+hcw <- highchart(height = H) %>% 
+  hc_chart(type = "scatter") %>% 
+  hc_add_theme(hc_theme_null()) %>% 
+  hc_yAxis(reversed = TRUE)
+
+hcw$x$hc_opts$series <- dst
+
+hcw
+
+```
 
 </div>
-<div class="col-md-9">
+
+
+### How Many
+
+#### They were & are
+
+```{r intro}
+dcd <- df %>% 
+  filter(state == "DC", year == max(year))
+
+```
+
+<div class="col-md-4">
+**Sadly**, a lot of people is homeless in the USA. How ever not all the 
+states have the same rate of.
+
+Is alarming how the **Distric of Columnbia** have the greatest 
+rate of homeless people by far followed by **Hawaii** and
+**New York**.
+</div>
+
+<div class="col-md-8">
 ```{r}
 fmtrr <- "function() {
   if (this.point.x == this.series.data[this.series.data.length-1].x) {
@@ -67,20 +144,18 @@ dss <- df %>%
     name = first(.$name),
     id = first(.$state),
     data = .[[sprintf("%s_per_100k", varname)]],
-    color = ifelse(first(.$name) == "District of Columbia", "red", NA)
+    color = ifelse(first(.$name) == "District of Columbia", maincolor, defaultcolor)
   )) %>% 
   .$dss
 
-hc_tms <- highchart() %>%
-  hc_chart(type = "spline", backgroundColor = "transparent") %>% 
-  hc_colors(list(defaultcolor)) %>% 
+hc_tms <- highchart(height = H) %>%
+  hc_chart(type = "spline", backgroundColor = "transparent") %>%
   hc_plotOptions(
     series = list(
       dataLabels = dtlopts,
       showInLegend = FALSE,
       animation = list(duration = 5*1000),
       marker = list(enabled = FALSE),
-      stickyTracking = FALSE,
       events = list(
         mouseOver = JS(sprintf("function(){ this.update({color: '%s'})}", maincolor)),
         mouseOut = JS(sprintf("function(){ this.update({color: '%s'}) }", defaultcolor))
@@ -88,22 +163,24 @@ hc_tms <- highchart() %>%
       )
     ) %>% 
   hc_tooltip(valueDecimals = 0) %>% 
-  hc_yAxis(type = "logarithmic") %>% 
-  hc_xAxis(categories = sort(unique(homeless$year)))
+  hc_yAxis(title = list(text = "Homless people by 100k habitants")) %>% 
+  hc_xAxis(categories = sort(unique(homeless$year)),
+           tickmarkPlacement = "on")
 
 hc_tms$x$hc_opts$series <- dss
 hc_tms
 ```
 </div>
 
+
 ### Maps
 
-<div class="col-md-3">
+<div class="col-md-4">
  
 Lorem asdioasd masd aso´dm asd asodma sdopam sdpoams daopmsd asda sd asda dasd asd
 
 </div>
-<div class="col-md-9">
+<div class="col-md-8">
 ```{r}
 dss <- df %>% 
   group_by(name) %>% 
@@ -119,13 +196,49 @@ hc_map <- highchart(type = "map") %>%
                 name = "per 100,000",
                 mapData = usgeojson,
                 joinBy = "code") %>% 
-  hc_colorAxis(minColor = "#000000", maxColor = "#FDE725",
-               min = 1, max = 1100)
+  hc_colorAxis(stops = color_stops(), min = 1, max = 1100)
 hc_map
 
 ```
 </div>
 
 
+
+### Hope
+
+#### Not all is sad
+
+```{r hope}
+df <- df %>% 
+  arrange(state, year) 
+df <- df %>% mutate(n = ifelse(is.na(n) & state == "NY", 61125, n))
+df$n[is.na(df$n)] <- (df$n[which(is.na(df$n)) + 1] + df$n[which(is.na(df$n)) - 1] ) /2
+
+dftot <- df %>% 
+  group_by(year) %>% 
+  summarise(n = sum(n, na.omit = TRUE),
+            p = sum(population)) %>% 
+  ungroup() %>% 
+  mutate(hml_per_100k = n/p*100000)
+
+p <- diff(dftot$hml_per_100k)/dftot$hml_per_100k[8]
+p <- scales::percent(mean(p)) 
+```
+
+
+<div class="col-md-4">
+ 
+
+Lorem asdioasd masd aso´dm asd asodma sdopam sdpoams daopmsd asda sd asda dasd asd
+
+</div>
+<div class="col-md-8">
+```{r}
+highchart(height = H) %>% 
+  hc_add_series(data = round(dftot$hml_per_100k), color = maincolor, name = "Total homeless") %>% 
+  hc_xAxis(categories = dftot$year, tickmarkPlacement = "on") %>% 
+  hc_yAxis(min = 0)
+```
+</div>
 
 

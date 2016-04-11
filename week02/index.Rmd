@@ -37,7 +37,7 @@ knitr::opts_chunk$set(echo = FALSE, meesage = FALSE, warning = FALSE)
 #### asd
 
 <div class="col-md-4">
-**Sadly**, a lot of people is homeless in the USA. How ever not all the 
+A lot of people are homeless in the USA. How ever not all the 
 states have the same rate of.
 
 Is alarming how the **Distric of Columnbia** have the greatest 
@@ -54,11 +54,13 @@ dft <- df %>%
   mutate(p = 100*n/sum(n),
          seq = row_number())
 
+ng <- 4
+
 dft1 <- dft %>% 
-  filter(seq <= 5) 
+  filter(seq <= ng) 
 
 dft2 <- dft %>% 
-  filter(seq >= 6) %>% 
+  filter(seq >= ng + 1) %>% 
   summarise(n = sum(n), p = sum(p)) %>% 
   mutate(population = sum(dft$population) - sum(dft1$population),
          p =  sum(dft$p) - sum(dft1$p),
@@ -88,7 +90,12 @@ dst <- list.parse2(bind_cols(dft, dcoords)) %>%
 hcw <- highchart(height = H) %>% 
   hc_chart(type = "scatter") %>% 
   hc_add_theme(hc_theme_null()) %>% 
-  hc_yAxis(reversed = TRUE)
+  hc_yAxis(reversed = TRUE) %>% 
+  hc_plotOptions(
+    series = list(
+       animation = list(duration = 5*1000)
+    )
+  )
 
 hcw$x$hc_opts$series <- dst
 

@@ -8,3 +8,10 @@ html, body {
     margin-right: auto;
 }
 
+.col-md-4 {
+  padding-top: 35px;
+}
+
+p {
+  line-height: 250%;
+}

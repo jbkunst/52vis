@@ -20,7 +20,7 @@ homeless <- map_df(names(yrs), function(i) {
   new_names <- tolower(make.names(colnames(df)))
   new_names <- str_replace_all(new_names, "\\.+", "_")
   df <- setNames(df, str_replace_all(new_names, "_[[:digit:]]+$", ""))
-  bind_cols(df, data_frame(year=rep(yrs[i], nrow(df))))
+  bind_cols(df, data_frame(year = rep(yrs[i], nrow(df))))
 })
 
 rm(URL, fil, yrs)
@@ -45,19 +45,11 @@ uspop <- uspop %>%
 
 rm(fil2, URL2)
 
-get_series <- function(variable) {
-  states <- homeless %>%
-    group_by(year, state) %>% 
-    summarise_(n = sprintf("sum(%s)", variable)) %>% 
-    ungroup() %>% 
-    mutate(year = as.character(year)) %>% 
-    left_join(uspop, by = c("year", "state")) %>% 
-    mutate_(variable = "(n/population)*100000") %>% 
-    filter(!is.na(name))
-  names(states) <- c(head(names(states), -1), sprintf("%s_per_100k", variable))
-  states
-}
-
-get_series(variable = "total_homeless")
-get_series(variable = "homeless_people_in_families")
-
+df <-   homeless %>%
+  group_by(year, state) %>% 
+  summarise(n = sum(total_homeless)) %>% 
+  ungroup() %>% 
+  mutate(year = as.character(year)) %>% 
+  left_join(uspop, by = c("year", "state")) %>% 
+  mutate(total_homeless_per_100k = (n/population)*100000) %>% 
+  filter(!is.na(name))

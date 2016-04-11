@@ -1,5 +1,5 @@
 ---
-title: "The Title Goes Here"
+title: "Homelessness in  U.S. <small>How many...</small>"
 output:
   html_document:
     theme: flatly
@@ -7,45 +7,33 @@ output:
 ---
 
 <link rel="stylesheet" href="styles.css">
+<script src="custom.js"></script>
 ```{r setup, include = FALSE, echo = FALSE, meesage = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = FALSE, meesage = FALSE, warning = FALSE)
 rm(list = ls())
 library("dplyr")
 library("viridisLite")
 library("highcharter")
+library("scales")
+library("forecast")
 source("data.R")
-
-# other data
-varname <- "total_homeless"
-df <- get_series(varname) 
-
 data("usgeojson")
+
+
 maincolor <- "#2c3e50"
 defaultcolor <- hex_to_rgba("#3f3f3f", 0.25)
 H <- 400
 
 thm <- hc_theme(
-  backgroundColor = "transparent"
+  backgroundColor = "transparent",
+  colors = c(maincolor, hc_theme_darkunica()$colors)
 )
-
-knitr::opts_chunk$set(echo = FALSE, meesage = FALSE, warning = FALSE)
 ```
 
-##  {.tabset .tabset-fade .tabset-pills}
+## {.tabset .tabset-fade .tabset-pills}
 
-### Waffle
+### are they?
 
-#### asd
-
-<div class="col-md-4">
-A lot of people are homeless in the USA. How ever not all the 
-states have the same rate of.
-
-Is alarming how the **Distric of Columnbia** have the greatest 
-rate of homeless people by far followed by **Hawaii** and
-**New York**.
-</div>
-
-<div class="col-md-8">
 ```{r}
 dft <- df %>% 
   filter(year == max(year)) %>% 
@@ -69,8 +57,23 @@ dft2 <- dft %>%
 dft <- bind_rows(dft1, dft2) %>% 
   select(-seq) %>% 
   mutate(pr = round(p))
+```
 
+<div class="col-md-4">
+A lot of people are homeless in the U.S.. In fact, in 2015
+they were `r comma(sum(dft$n))` people and the `r  dft$pr[1]`%
+(`r comma(dft$n[1])`) are in **California**. California is
+followed by **New York**, **Florida** and **Texas** doing almost
+the 50% of all homeless in U.S..
 
+The next chart is a representation of the distribution of the 
+homeless people. Each icon represent  ~`r  round(sum(dft$n)/100)`
+peolpe.
+
+</div>
+
+<div class="col-md-8">
+```{r}
 w <- 20
 h <- 5
 
@@ -89,40 +92,46 @@ dst <- list.parse2(bind_cols(dft, dcoords)) %>%
 
 hcw <- highchart(height = H) %>% 
   hc_chart(type = "scatter") %>% 
-  hc_add_theme(hc_theme_null()) %>% 
   hc_yAxis(reversed = TRUE) %>% 
+  hc_tooltip(enabled = FALSE) %>% 
   hc_plotOptions(
     series = list(
-       animation = list(duration = 5*1000)
+       animation = list(duration = 3*1000),
+       states = list(
+         hover = list(
+           enabled = FALSE
+         )
+       )
     )
-  )
+  ) %>% 
+  hc_add_theme(
+    hc_theme_merge(thm, hc_theme_null())
+  ) 
 
 hcw$x$hc_opts$series <- dst
 
 hcw
 
 ```
-
 </div>
 
+### were they?
 
-### How Many
-
-#### They were & are
-
-```{r intro}
+```{r}
 dcd <- df %>% 
   filter(state == "DC", year == max(year))
 
 ```
 
 <div class="col-md-4">
-**Sadly**, a lot of people is homeless in the USA. How ever not all the 
-states have the same rate of.
+However the previous chart don't consider the population size of each
+state hidding crucial information.
 
-Is alarming how the **Distric of Columnbia** have the greatest 
-rate of homeless people by far followed by **Hawaii** and
-**New York**.
+In fact, the previous years the **Distric of Columnbia** has been the state
+with the greatest  rate of homelessness people by far followed by 
+**Hawaii** and **New York**
+presenting a slight increased trend. 
+
 </div>
 
 <div class="col-md-8">
@@ -150,7 +159,7 @@ dss <- df %>%
   do(dss = list(
     name = first(.$name),
     id = first(.$state),
-    data = .[[sprintf("%s_per_100k", varname)]],
+    data = .$total_homeless_per_100k,
     color = ifelse(first(.$name) == "District of Columbia", maincolor, defaultcolor)
   )) %>% 
   .$dss
@@ -159,6 +168,7 @@ hc_tms <- highchart(height = H) %>%
   hc_chart(type = "spline", backgroundColor = "transparent") %>%
   hc_plotOptions(
     series = list(
+      animation = list(duration = 3*1000),
       dataLabels = dtlopts,
       showInLegend = FALSE,
       animation = list(duration = 5*1000),
@@ -170,7 +180,7 @@ hc_tms <- highchart(height = H) %>%
       )
     ) %>% 
   hc_tooltip(valueDecimals = 0) %>% 
-  hc_yAxis(title = list(text = "Homless people by 100k habitants")) %>% 
+  hc_yAxis(title = list(text = "Homeless people by 100k habitants")) %>% 
   hc_xAxis(categories = sort(unique(homeless$year)),
            tickmarkPlacement = "on")
 
@@ -179,41 +189,7 @@ hc_tms
 ```
 </div>
 
-
-### Maps
-
-<div class="col-md-4">
- 
-Lorem asdioasd masd aso´dm asd asodma sdopam sdpoams daopmsd asda sd asda dasd asd
-
-</div>
-<div class="col-md-8">
-```{r}
-dss <- df %>% 
-  group_by(name) %>% 
-  do(dss = list(
-    code = first(.$state) %>% tolower() %>% str_c("us-", .),
-    postalcode = first(.$state),
-    sequence = .[[sprintf("%s_per_100k", varname)]],
-    value = last(.[[sprintf("%s_per_100k", varname)]]))) %>% 
-  .$dss
-
-hc_map <- highchart(type = "map") %>% 
-  hc_add_series(data = dss,
-                name = "per 100,000",
-                mapData = usgeojson,
-                joinBy = "code") %>% 
-  hc_colorAxis(stops = color_stops(), min = 1, max = 1100)
-hc_map
-
-```
-</div>
-
-
-
-### Hope
-
-#### Not all is sad
+### they will be?
 
 ```{r hope}
 df <- df %>% 
@@ -228,23 +204,41 @@ dftot <- df %>%
   ungroup() %>% 
   mutate(hml_per_100k = n/p*100000)
 
+tmsr <- ts(dftot$n, start = 2007)
+
+hc <- hchart(splinef(tmsr, level = 95, h = 5)) %>% 
+  hc_yAxis(min = 0) %>% 
+  hc_xAxis(tickmarkPlacement = "on") %>% 
+  hc_tooltip(valueDecimals = 0) %>% 
+  hc_yAxis(title = list(text = "Homeless people")) %>% 
+  hc_plotOptions(
+    series = list(
+      animation = list(duration = 3*1000)
+    )
+  )
+  
+
 p <- diff(dftot$hml_per_100k)/dftot$hml_per_100k[8]
-p <- scales::percent(mean(p)) 
+p <- percent(mean(p)) 
 ```
 
 
 <div class="col-md-4">
- 
+There is **hope**.
+
+As we see in the chart the people so 
 
 Lorem asdioasd masd aso´dm asd asodma sdopam sdpoams daopmsd asda sd asda dasd asd
 
 </div>
 <div class="col-md-8">
 ```{r}
-highchart(height = H) %>% 
-  hc_add_series(data = round(dftot$hml_per_100k), color = maincolor, name = "Total homeless") %>% 
-  hc_xAxis(categories = dftot$year, tickmarkPlacement = "on") %>% 
-  hc_yAxis(min = 0)
+hc$height <- H
+hc$x$hc_opts$series[[1]]$color <- maincolor
+hc$x$hc_opts$series[[1]]$name <- "Homelessness"
+hc$x$hc_opts$series[[2]]$name <- "Predicted trend"
+
+hc
 ```
 </div>
 

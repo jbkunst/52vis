@@ -6,8 +6,10 @@ output:
     toc: false
 ---
 
+
 <link rel="stylesheet" href="styles.css">
 <script src="custom.js"></script>
+<div id="bg"><img src="bg.jpg"></img></div>
 ```{r setup, include = FALSE, echo = FALSE, meesage = FALSE, warning = FALSE}
 knitr::opts_chunk$set(echo = FALSE, meesage = FALSE, warning = FALSE)
 rm(list = ls())
@@ -26,7 +28,7 @@ H <- 400
 
 thm <- hc_theme(
   backgroundColor = "transparent",
-  colors = c(maincolor, hc_theme_darkunica()$colors)
+  colors = c(maincolor, hc_theme_flat()$colors)
 )
 ```
 
@@ -60,11 +62,11 @@ dft <- bind_rows(dft1, dft2) %>%
 ```
 
 <div class="col-md-4">
-A lot of people are homeless in the U.S.. In fact, in 2015
-they were `r comma(sum(dft$n))` people and the `r  dft$pr[1]`%
-(`r comma(dft$n[1])`) are in **California**. California is
+A lot of people are homeless in the U.S. In fact, in 2015
+they were `r comma(sum(dft$n))` and the `r  dft$pr[1]`%
+(`r comma(dft$n[1])`) of them were lived in **California**. By counts California is
 followed by **New York**, **Florida** and **Texas** doing almost
-the 50% of all homeless in U.S..
+the 50% of all homeless people in U.S.
 
 The next chart is a representation of the distribution of the 
 homeless people. Each icon represent  ~`r  round(sum(dft$n)/100)`
@@ -125,12 +127,11 @@ dcd <- df %>%
 
 <div class="col-md-4">
 However the previous chart don't consider the population size of each
-state hidding crucial information.
+state hidding **crucial information**.
 
 In fact, the previous years the **Distric of Columnbia** has been the state
-with the greatest  rate of homelessness people by far followed by 
-**Hawaii** and **New York**
-presenting a slight increased trend. 
+with the greatest rate of homelessness people by far followed by 
+**Hawaii** and **New York**. 
 
 </div>
 
@@ -208,6 +209,9 @@ tmsr <- ts(dftot$n, start = 2007)
 
 hc <- hchart(splinef(tmsr, level = 95, h = 5)) %>% 
   hc_yAxis(min = 0) %>% 
+  hc_chart(
+    backgroundColor = "transparent"
+  ) %>% 
   hc_xAxis(tickmarkPlacement = "on") %>% 
   hc_tooltip(valueDecimals = 0) %>% 
   hc_yAxis(title = list(text = "Homeless people")) %>% 
@@ -219,17 +223,17 @@ hc <- hchart(splinef(tmsr, level = 95, h = 5)) %>%
   
 
 p <- diff(dftot$hml_per_100k)/dftot$hml_per_100k[8]
-p <- percent(mean(p)) 
+p <- percent(abs(mean(p))) 
 ```
 
 
 <div class="col-md-4">
 There is **hope**.
 
-As we see in the chart the people so 
-
-Lorem asdioasd masd aso´dm asd asodma sdopam sdpoams daopmsd asda sd asda dasd asd
-
+Every year, the number is reduced approximately by `r p` and these numbers
+try to convince us there will be less poeople without home... But is not 
+about numbers, is **about us** to change this reality making
+better choices, making a better world to live.
 </div>
 <div class="col-md-8">
 ```{r}
@@ -237,6 +241,7 @@ hc$height <- H
 hc$x$hc_opts$series[[1]]$color <- maincolor
 hc$x$hc_opts$series[[1]]$name <- "Homelessness"
 hc$x$hc_opts$series[[2]]$name <- "Predicted trend"
+hc$x$hc_opts$series[[2]]$color <- "red"
 
 hc
 ```
